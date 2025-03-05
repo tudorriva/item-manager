@@ -1,0 +1,18 @@
+<% layout('layout') %>
+<h1>Item List</h1>
+<a href="/items/add">Add New Item</a>
+<% if (!items || items.length === 0) { %>
+  <p>No items found. Click the link above to add one.</p>
+<% } else { %>
+  <ul>
+    <% items.forEach(item => { %>
+      <li>
+        <%= item.name %> - <%= item.description %>
+        <a href="/items/edit/<%= item._id %>">Edit</a>
+        <form action="/items/delete/<%= item._id %>" method="POST" style="display:inline;">
+          <button type="submit">Delete</button>
+        </form>
+      </li>
+    <% }) %>
+  </ul>
+<% } %>
