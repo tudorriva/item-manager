@@ -1,6 +1,6 @@
 <% layout('layout') %>
 <h1>Item List</h1>
-<a href="/items/add">Add New Item</a>
+<a href="/items/add" class="auth-required">Add New Item</a>
 <% if (!items || items.length === 0) { %>
   <p>No items found. Click the link above to add one.</p>
 <% } else { %>
@@ -8,11 +8,36 @@
     <% items.forEach(item => { %>
       <li>
         <%= item.name %> - <%= item.description %>
-        <a href="/items/edit/<%= item._id %>">Edit</a>
-        <form action="/items/delete/<%= item._id %>" method="POST" style="display:inline;">
-          <button type="submit">Delete</button>
+        <a href="#" class="edit-link auth-required" data-id="<%= item._id %>">Edit</a>
+        <form method="POST" action="/items/delete/<%= item._id %>" class="delete-form">
+          <button type="submit" class="auth-required">Delete</button>
         </form>
       </li>
     <% }) %>
   </ul>
 <% } %>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Handle edit links
+  document.querySelectorAll('.edit-link').forEach(link => {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      const token = localStorage.getItem('token');
+      const itemId = this.getAttribute('data-id');
+      
+      // If not logged in, show login prompt
+      if (!token) {
+        alert('You must be logged in to edit items');
+        window.location.href = '/login';
+        return;
+      }
+      
+      window.location.href = `/items/edit/${itemId}`;
+    });
+  });
+  
+  // Add event listeners for delete buttons if you have them
+  // Similar to your existing code
+});
+</script>

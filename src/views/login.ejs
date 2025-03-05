@@ -1,0 +1,48 @@
+<% layout('layout') %>
+<h1>Login</h1>
+<form action="/api/auth/login" method="POST" id="loginForm">
+  <div>
+    <label for="email">Email:</label>
+    <input type="email" name="email" id="email" required>
+  </div>
+  <div>
+    <label for="password">Password:</label>
+    <input type="password" name="password" id="password" required>
+  </div>
+  <button type="submit">Login</button>
+</form>
+<p>Don't have an account? <a href="/signup">Sign Up</a></p>
+
+<script>
+document.getElementById('loginForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  
+  const formData = {
+    email: document.getElementById('email').value,
+    password: document.getElementById('password').value
+  };
+  
+  try {
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(formData)
+    });
+    
+    const data = await response.json();
+    
+    if (data.status === 'success') {
+      console.log('Token received:', data.token);
+      localStorage.setItem('token', data.token);
+      console.log('Token stored:', localStorage.getItem('token'));
+      window.location.href = '/items';
+    } else {
+      alert(data.message);
+    }
+  } catch (err) {
+    alert('An error occurred. Please try again.');
+  }
+});
+</script>

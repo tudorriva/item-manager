@@ -11,14 +11,102 @@
     <h1>CRUD App</h1>
     <nav>
       <a href="/">Home</a>
-      <a href="/items/add">Add Item</a>
+      <a href="/items/add" class="auth-required">Add Item</a>
+      <span id="auth-links">
+        <a href="/login" class="logged-out">Login</a>
+        <a href="/signup" class="logged-out">Sign Up</a>
+        <a href="#" id="logout-link" class="logged-in">Logout</a>
+      </span>
     </nav>
   </header>
   <main>
     <%- body %>
   </main>
   <footer>
-    <p>&copy; 2023 My CRUD App</p>
+    <p>&copy; 2025 Tudor Ivancea</p>
   </footer>
+
+  <script>
+    // Check authentication state
+    document.addEventListener('DOMContentLoaded', function() {
+      const token = localStorage.getItem('token');
+      const isLoggedIn = !!token;
+      
+      // Show/hide elements based on auth state
+      document.querySelectorAll('.logged-in').forEach(el => {
+        el.style.display = isLoggedIn ? 'inline' : 'none';
+      });
+      
+      document.querySelectorAll('.logged-out').forEach(el => {
+        el.style.display = isLoggedIn ? 'none' : 'inline';
+      });
+      
+      document.querySelectorAll('.auth-required').forEach(el => {
+        if (!isLoggedIn) {
+          // If it's a button or input, disable it
+          if (el.tagName === 'BUTTON' || el.tagName === 'INPUT') {
+            el.disabled = true;
+            el.classList.add('disabled');
+          }
+          
+          // If it's a link, prevent default and show login prompt
+          if (el.tagName === 'A') {
+            el.addEventListener('click', function(e) {
+              e.preventDefault();
+              alert('Please log in to access this feature');
+              window.location.href = '/login';
+            });
+            el.classList.add('disabled-link');
+          }
+          
+          // For all auth-required elements, add visual indication
+          el.classList.add('auth-hidden');
+        }
+      });
+      
+      // Handle logout
+      const logoutLink = document.getElementById('logout-link');
+      if (logoutLink) {
+        logoutLink.addEventListener('click', function(e) {
+          e.preventDefault();
+          localStorage.removeItem('token');
+          window.location.href = '/login';
+        });
+      }
+
+      // Check server status periodically
+      let lastKnownServerTime = null;
+      async function checkServerStatus() {
+        try {
+          const response = await fetch('/api/server-status');
+          const data = await response.json();
+          
+          // On first check, just store the time
+          if (lastKnownServerTime === null) {
+            lastKnownServerTime = data.startTime;
+            return;
+          }
+          
+          // If timestamp changed, server was restarted
+          if (lastKnownServerTime !== data.startTime) {
+            console.log('Server was restarted, logging out...');
+            localStorage.removeItem('token');
+            alert('Your session has expired. Please log in again.');
+            window.location.href = '/login';
+          }
+          
+          lastKnownServerTime = data.startTime;
+        } catch (err) {
+          console.log('Server check failed, might be offline');
+        }
+      }
+      
+      // Check every 30 seconds if user is logged in
+      if (localStorage.getItem('token')) {
+        checkServerStatus(); // Initial check
+        setInterval(checkServerStatus, 30000);
+      }
+    });
+  </script>
 </body>
 </html>

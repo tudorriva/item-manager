@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const path = require('path');
 const fs = require('fs');
 const itemRoutes = require('./routes/itemRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 console.log('Starting application...');
 
@@ -17,6 +18,15 @@ require('dotenv').config();
 // Create Express app
 const app = express();
 
+// Generate a server start timestamp
+const SERVER_START_TIME = Date.now();
+app.locals.startTime = SERVER_START_TIME;
+
+// Add a route to check server timestamp
+app.get('/api/server-status', (req, res) => {
+  res.json({ startTime: app.locals.startTime });
+});
+
 // Use ejs-mate for layout support
 app.engine('ejs', require('ejs-mate'));
 app.set('view engine', 'ejs');
@@ -28,12 +38,15 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Setup routes
 app.use('/items', itemRoutes);
+app.use('/api/auth', authRoutes);
 app.get('/', (req, res) => res.redirect('/items'));
 
-// Log environment variables
-console.log('Environment variables:');
-console.log('- NODE_ENV:', process.env.NODE_ENV);
-console.log('- MONGODB_URI:', process.env.MONGODB_URI || 'Not set');
+// Add these routes to serve the login/signup pages
+app.get('/login', (req, res) => res.render('login'));
+app.get('/signup', (req, res) => res.render('signup'));
+
+// Add this route to serve the token test page
+app.get('/token-test', (req, res) => res.render('tokenTest'));
 
 // Add unhandled promise rejection handler
 process.on('unhandledRejection', (reason, promise) => {
@@ -45,7 +58,6 @@ const startServer = async () => {
   console.log('Attempting to connect to MongoDB...');
   
   try {
-    // Default to localhost if no URI is provided
     const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/my-crud-app';
     console.log('Using MongoDB URI:', uri);
     
@@ -53,16 +65,15 @@ const startServer = async () => {
       useNewUrlParser: true,
       useUnifiedTopology: true
     });
-    console.log('✓ Connected to MongoDB successfully');
+    console.log('Connected to MongoDB successfully');
     
     // Start the server
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
-      console.log(`✓ Server is running on port ${PORT}`);
+      console.log(`Server is running on port ${PORT}`);
     });
   } catch (err) {
-    console.error('✗ Failed to connect to MongoDB:', err);
-    // Keep the process alive to see the logs
+    console.error('Failed to connect to MongoDB:', err);
     console.log('Process will exit in 5 seconds...');
     setTimeout(() => process.exit(1), 5000);
   }
