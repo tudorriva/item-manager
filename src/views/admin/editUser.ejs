@@ -1,79 +1,142 @@
-<% layout('../layout') %>
+<% layout('../views/layouts/main') %>
 
 <h1>Edit User</h1>
 
-<form id="editUserForm">
-  <div>
-    <label for="name">Name:</label>
-    <input type="text" name="name" id="name" value="<%= user.name %>" required>
-  </div>
-  <div>
-    <label for="email">Email:</label>
-    <input type="email" name="email" id="email" value="<%= user.email %>" required>
-  </div>
-  <div>
-    <label for="role">Role:</label>
-    <select name="role" id="role">
-      <option value="user" <%= user.role === 'user' ? 'selected' : '' %>>User</option>
-      <option value="admin" <%= user.role === 'admin' ? 'selected' : '' %>>Admin</option>
-      <option value="manager" <%= user.role === 'manager' ? 'selected' : '' %>>Manager</option>
-    </select>
-  </div>
-  <button type="submit">Update User</button>
-</form>
+<div id="loading-message">Loading user data...</div>
+<div id="auth-error" style="display:none; color: red;"></div>
+<div id="user-form-container" style="display:none;">
+  <form id="editUserForm">
+    <div>
+      <label for="name">Name:</label>
+      <input type="text" name="name" id="name" required>
+    </div>
+    <div>
+      <label for="email">Email:</label>
+      <input type="email" name="email" id="email" required>
+    </div>
+    <div>
+      <label for="role">Role:</label>
+      <select name="role" id="role">
+        <option value="user">User</option>
+        <option value="admin">Admin</option>
+        <option value="manager">Manager</option>
+      </select>
+    </div>
+    <button type="submit">Update User</button>
+  </form>
+</div>
 
 <div id="result" style="margin-top: 20px; display: none;"></div>
 
 <p><a href="/admin/users">&larr; Back to Users List</a></p>
 
 <script>
-document.getElementById('editUserForm').addEventListener('submit', async function(e) {
-  e.preventDefault();
-  
+document.addEventListener('DOMContentLoaded', async function() {
   const token = localStorage.getItem('token');
+  const userId = '<%= userId %>';
+  
   if (!token) {
-    alert('Authentication required');
-    window.location.href = '/login';
+    document.getElementById('loading-message').style.display = 'none';
+    document.getElementById('auth-error').style.display = 'block';
+    document.getElementById('auth-error').textContent = 'Authentication required. Please log in as admin.';
     return;
   }
   
-  const formData = {
-    name: document.getElementById('name').value,
-    email: document.getElementById('email').value,
-    role: document.getElementById('role').value
-  };
-  
   try {
-    const response = await fetch('/admin/users/<%= user._id %>', {
-      method: 'POST',
+    // First check if user is admin
+    const meResponse = await fetch('/api/auth/me', {
       headers: {
-        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(formData)
+      }
     });
     
-    const data = await response.json();
+    const meData = await meResponse.json();
     
-    const resultDiv = document.getElementById('result');
-    resultDiv.style.display = 'block';
-    
-    if (response.ok) {
-      resultDiv.textContent = 'User updated successfully!';
-      resultDiv.style.backgroundColor = '#d4edda';
-      resultDiv.style.color = '#155724';
-    } else {
-      resultDiv.textContent = data.message || 'Error updating user';
-      resultDiv.style.backgroundColor = '#f8d7da';
-      resultDiv.style.color = '#721c24';
+    if (!meResponse.ok || meData.data.user.role !== 'admin') {
+      document.getElementById('loading-message').style.display = 'none';
+      document.getElementById('auth-error').style.display = 'block';
+      document.getElementById('auth-error').innerHTML = 
+        '<p>You must be an admin to access this page. <a href="/items">Go back to items</a></p>';
+      return;
     }
+    
+    // If user is admin, fetch user data
+    const userResponse = await fetch(`/admin/api/users/${userId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!userResponse.ok) {
+      throw new Error('Failed to fetch user data');
+    }
+    
+    const userData = await userResponse.json();
+    const user = userData.data.user;
+    
+    // Populate form with user data
+    document.getElementById('name').value = user.name;
+    document.getElementById('email').value = user.email;
+    document.getElementById('role').value = user.role;
+    
+    // Hide loading, show form
+    document.getElementById('loading-message').style.display = 'none';
+    document.getElementById('user-form-container').style.display = 'block';
+    
+    // Handle form submission
+    document.getElementById('editUserForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const formData = {
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        role: document.getElementById('role').value
+      };
+      
+      try {
+        const response = await fetch(`/admin/api/users/${userId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        const resultDiv = document.getElementById('result');
+        resultDiv.style.display = 'block';
+        
+        if (response.ok) {
+          resultDiv.textContent = 'User updated successfully!';
+          resultDiv.style.backgroundColor = '#d4edda';
+          resultDiv.style.color = '#155724';
+          resultDiv.style.padding = '10px';
+          resultDiv.style.borderRadius = '4px';
+        } else {
+          resultDiv.textContent = data.message || 'Error updating user';
+          resultDiv.style.backgroundColor = '#f8d7da';
+          resultDiv.style.color = '#721c24';
+          resultDiv.style.padding = '10px';
+          resultDiv.style.borderRadius = '4px';
+        }
+      } catch (err) {
+        console.error('Error:', err);
+        const resultDiv = document.getElementById('result');
+        resultDiv.style.display = 'block';
+        resultDiv.textContent = 'An error occurred: ' + err.message;
+        resultDiv.style.backgroundColor = '#f8d7da';
+        resultDiv.style.color = '#721c24';
+        resultDiv.style.padding = '10px';
+        resultDiv.style.borderRadius = '4px';
+      }
+    });
+    
   } catch (err) {
     console.error('Error:', err);
-    const resultDiv = document.getElementById('result');
-    resultDiv.style.display = 'block';
-    resultDiv.textContent = 'An error occurred';
-    resultDiv.style.backgroundColor = '#f8d7da';
-    resultDiv.style.color = '#721c24';
+    document.getElementById('loading-message').style.display = 'none';
+    document.getElementById('auth-error').style.display = 'block';
+    document.getElementById('auth-error').textContent = 'Error loading user data: ' + err.message;
   }
 });
 </script>

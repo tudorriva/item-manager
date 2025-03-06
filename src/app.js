@@ -33,9 +33,25 @@ app.engine('ejs', require('ejs-mate'));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+app.locals.layoutsDir = path.join(__dirname, 'views');
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Create a direct API route for item operations with token handling
+const itemController = require('./controllers/itemController');
+const authController = require('./controllers/authController');
+
+app.post('/api/items/:id/delete', 
+  function(req, res, next) {
+    // Debug middleware to check headers
+    console.log('Delete request headers:', req.headers);
+    next();
+  },
+  authController.protect, 
+  itemController.deleteItem
+);
 
 // Setup routes
 app.use('/items', itemRoutes);

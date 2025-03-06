@@ -116,6 +116,108 @@
           window.location.href = '/login';
         });
       }
+
+      // Use a flag to track if we're already processing a delete
+      let isProcessingDelete = false;
+
+      // Handle delete forms with authentication
+      document.querySelectorAll('form[action^="/items/delete/"]').forEach(form => {
+        form.addEventListener('submit', function(e) {
+          e.preventDefault();
+          e.stopPropagation(); // Stop event bubbling
+          
+          // Prevent duplicate submissions
+          if (isProcessingDelete) {
+            console.log('Already processing a delete request');
+            return;
+          }
+          
+          isProcessingDelete = true;
+          
+          if (confirm('Are you sure you want to delete this item?')) {
+            const token = localStorage.getItem('token');
+            if (!token) {
+              isProcessingDelete = false;
+              alert('You must be logged in to delete items');
+              window.location.href = '/login';
+              return;
+            }
+            
+            const formAction = this.getAttribute('action');
+            const itemId = formAction.split('/').pop();
+            
+            fetch(`/api/items/${itemId}/delete`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            })
+            .then(response => {
+              isProcessingDelete = false;
+              if (response.ok) {
+                alert('Item deleted successfully');
+                window.location.reload();
+              } else {
+                return response.json().then(data => {
+                  throw new Error(data.message || 'Failed to delete item');
+                });
+              }
+            })
+            .catch(error => {
+              isProcessingDelete = false;
+              alert('Error: ' + error.message);
+              console.error('Error:', error);
+            });
+          } else {
+            isProcessingDelete = false;
+          }
+        });
+      });
+
+      // For button-based deletion
+      document.querySelectorAll('.delete-btn').forEach(btn => {
+        // Remove any existing click handlers first to avoid duplicates
+        btn.removeEventListener('click', handleDeleteButtonClick);
+        btn.addEventListener('click', handleDeleteButtonClick);
+      });
+
+      function handleDeleteButtonClick(e) {
+        e.preventDefault();
+        
+        if (confirm('Are you sure you want to delete this item?')) {
+          const token = localStorage.getItem('token');
+          if (!token) {
+            alert('You must be logged in to delete items');
+            window.location.href = '/login';
+            return;
+          }
+          
+          const itemId = this.getAttribute('data-id');
+          
+          fetch(`/api/items/${itemId}/delete`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          })
+          .then(response => {
+            if (response.ok) {
+              alert('Item deleted successfully');
+              window.location.reload();
+            } else {
+              return response.json().then(data => {
+                throw new Error(data.message || 'Failed to delete item');
+              });
+            }
+          })
+          .catch(error => {
+            alert('Error: ' + error.message);
+            console.error('Error:', error);
+          });
+        }
+      }
     });
   </script>
 </body>

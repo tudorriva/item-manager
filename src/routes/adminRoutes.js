@@ -12,6 +12,15 @@ router.get('/users', (req, res) => {
   });
 });
 
+// Add this route for the edit user page
+router.get('/users/:id', (req, res) => {
+    res.render('admin/editUser', { 
+      userId: req.params.id,
+      isLoading: true,
+      title: 'Edit User' 
+    });
+  });
+
 // API routes for data that require authentication
 router.use('/api', authController.protect);
 router.use('/api', authController.restrictTo('admin'));

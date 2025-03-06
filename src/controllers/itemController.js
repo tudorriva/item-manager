@@ -90,16 +90,20 @@ exports.updateItem = async (req, res) => {
 // Delete an item
 exports.deleteItem = async (req, res) => {
   try {
+    console.log('Inside deleteItem controller');
+    console.log('User from request:', req.user ? req.user._id : 'Not found');
+    
+    // Your existing code...
+    
     const item = await Item.findById(req.params.id);
     
-    // Check if item exists
     if (!item) {
       return res.status(404).json({
         status: 'fail',
         message: 'No item found with that ID'
       });
     }
-    
+
     // If user is not admin and not the owner, forbid access
     if (req.user.role !== 'admin' && item.owner && !item.owner.equals(req.user.id)) {
       return res.status(403).json({
@@ -113,6 +117,31 @@ exports.deleteItem = async (req, res) => {
     res.status(204).json({
       status: 'success',
       data: null
+    });
+  } catch (err) {
+    res.status(400).json({
+      status: 'fail',
+      message: err.message
+    });
+  }
+};
+
+exports.getItemByIdJson = async (req, res) => {
+  try {
+    const item = await Item.findById(req.params.id);
+    
+    if (!item) {
+      return res.status(404).json({
+        status: 'fail',
+        message: 'No item found with that ID'
+      });
+    }
+    
+    res.status(200).json({
+      status: 'success',
+      data: {
+        item
+      }
     });
   } catch (err) {
     res.status(400).json({

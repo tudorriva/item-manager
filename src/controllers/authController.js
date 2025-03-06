@@ -86,14 +86,14 @@ exports.login = async (req, res) => {
 
 // Protect routes
 exports.protect = async (req, res, next) => {
-  console.log('Auth headers:', req.headers.authorization);
-  
   try {
-    // Get token
+    // 1) Getting token and check if it exists
     let token;
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    if (
+      req.headers.authorization && 
+      req.headers.authorization.startsWith('Bearer')
+    ) {
       token = req.headers.authorization.split(' ')[1];
-      console.log('Token extracted:', token ? 'Token found' : 'No token after Bearer');
     }
 
     if (!token) {
@@ -103,12 +103,11 @@ exports.protect = async (req, res, next) => {
       });
     }
 
-    // Verify token
-    console.log('Verifying token with secret:', process.env.JWT_SECRET ? 'Secret exists' : 'No secret');
+    // 2) Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     console.log('Token verified, decoded:', decoded);
 
-    // Check if user still exists
+    // 3) Check if user still exists
     const currentUser = await User.findById(decoded.id);
     if (!currentUser) {
       return res.status(401).json({
@@ -117,15 +116,18 @@ exports.protect = async (req, res, next) => {
       });
     }
 
-    // Grant access to protected route
+    // 4) Grant access to protected route
     req.user = currentUser;
     console.log('Auth successful, proceeding to next middleware');
+    console.log('User attached to request:', req.user._id);
+    
+    // Add debugging to see if user info is lost after this middleware
     next();
+    console.log('After next() - req.user still exists:', !!req.user);
   } catch (err) {
-    console.error('Auth error:', err);
-    res.status(401).json({
+    return res.status(401).json({
       status: 'fail',
-      message: 'Invalid token or token expired: ' + err.message
+      message: err.message
     });
   }
 };
