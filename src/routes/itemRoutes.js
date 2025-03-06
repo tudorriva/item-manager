@@ -5,14 +5,19 @@ const authController = require('../controllers/authController');
 
 // Public routes
 router.get('/', itemController.getAllItems);
+
+// Protected routes - require login
+router.use(authController.protect);
+
+// Routes for any logged-in user
 router.get('/add', (req, res) => res.render('addItem'));
-router.get('/edit/:id', itemController.getItemById);
-
-// Protected routes
-router.use(authController.protect); // All routes after this middleware are protected
-
 router.post('/add', itemController.addItem);
+router.get('/edit/:id', itemController.getItemById);
 router.post('/edit/:id', itemController.updateItem);
 router.post('/delete/:id', itemController.deleteItem);
+
+// Admin-only routes
+router.use(authController.restrictTo('admin'));
+router.get('/admin/all', itemController.getAllItems); // Example admin-only route
 
 module.exports = router;

@@ -27,12 +27,20 @@ const createSendToken = (user, statusCode, res) => {
 // Signup
 exports.signup = async (req, res) => {
   try {
+    // Check if this is the first user or if no admin exists
+    const adminExists = await User.findOne({ role: 'admin' });
+    
+    // Only allow setting admin role if no admin exists yet
+    const role = !adminExists && req.body.role === 'admin' 
+      ? 'admin' 
+      : 'user'; // Default to regular user
+
     // Create user
     const newUser = await User.create({
       name: req.body.name,
       email: req.body.email,
       password: req.body.password,
-      role: req.body.role
+      role: role // Use the role determined above
     });
 
     // Send token
@@ -50,7 +58,6 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Check if email and password exist
     if (!email || !password) {
       return res.status(400).json({
         status: 'fail',
@@ -58,7 +65,6 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Check if user exists && password is correct
     const user = await User.findOne({ email }).select('+password');
     
     if (!user || !(await user.correctPassword(password))) {
@@ -151,6 +157,33 @@ exports.getMe = async (req, res) => {
     });
   } catch (err) {
     res.status(404).json({
+      status: 'fail',
+      message: err.message
+    });
+  }
+};
+
+exports.createAdmin = async (req, res) => {
+  try {
+    // Only admins can create other admins
+    const newAdmin = await User.create({
+      name: req.body.name,
+      email: req.body.email,
+      password: req.body.password,
+      role: 'admin'
+    });
+
+    // Remove password from output
+    newAdmin.password = undefined;
+
+    res.status(201).json({
+      status: 'success',
+      data: {
+        user: newAdmin
+      }
+    });
+  } catch (err) {
+    res.status(400).json({
       status: 'fail',
       message: err.message
     });

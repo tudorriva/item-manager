@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const itemRoutes = require('./routes/itemRoutes');
 const authRoutes = require('./routes/authRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 console.log('Starting application...');
 
@@ -40,6 +41,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/items', itemRoutes);
 app.use('/api/auth', authRoutes);
 app.get('/', (req, res) => res.redirect('/items'));
+app.use('/admin', adminRoutes);
 
 // Add these routes to serve the login/signup pages
 app.get('/login', (req, res) => res.render('login'));

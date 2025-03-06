@@ -1,0 +1,79 @@
+<% layout('../layout') %>
+
+<h1>Edit User</h1>
+
+<form id="editUserForm">
+  <div>
+    <label for="name">Name:</label>
+    <input type="text" name="name" id="name" value="<%= user.name %>" required>
+  </div>
+  <div>
+    <label for="email">Email:</label>
+    <input type="email" name="email" id="email" value="<%= user.email %>" required>
+  </div>
+  <div>
+    <label for="role">Role:</label>
+    <select name="role" id="role">
+      <option value="user" <%= user.role === 'user' ? 'selected' : '' %>>User</option>
+      <option value="admin" <%= user.role === 'admin' ? 'selected' : '' %>>Admin</option>
+      <option value="manager" <%= user.role === 'manager' ? 'selected' : '' %>>Manager</option>
+    </select>
+  </div>
+  <button type="submit">Update User</button>
+</form>
+
+<div id="result" style="margin-top: 20px; display: none;"></div>
+
+<p><a href="/admin/users">&larr; Back to Users List</a></p>
+
+<script>
+document.getElementById('editUserForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  
+  const token = localStorage.getItem('token');
+  if (!token) {
+    alert('Authentication required');
+    window.location.href = '/login';
+    return;
+  }
+  
+  const formData = {
+    name: document.getElementById('name').value,
+    email: document.getElementById('email').value,
+    role: document.getElementById('role').value
+  };
+  
+  try {
+    const response = await fetch('/admin/users/<%= user._id %>', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(formData)
+    });
+    
+    const data = await response.json();
+    
+    const resultDiv = document.getElementById('result');
+    resultDiv.style.display = 'block';
+    
+    if (response.ok) {
+      resultDiv.textContent = 'User updated successfully!';
+      resultDiv.style.backgroundColor = '#d4edda';
+      resultDiv.style.color = '#155724';
+    } else {
+      resultDiv.textContent = data.message || 'Error updating user';
+      resultDiv.style.backgroundColor = '#f8d7da';
+      resultDiv.style.color = '#721c24';
+    }
+  } catch (err) {
+    console.error('Error:', err);
+    const resultDiv = document.getElementById('result');
+    resultDiv.style.display = 'block';
+    resultDiv.textContent = 'An error occurred';
+    resultDiv.style.backgroundColor = '#f8d7da';
+    resultDiv.style.color = '#721c24';
+  }
+});
+</script>

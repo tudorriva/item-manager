@@ -12,12 +12,17 @@
     <nav>
       <a href="/">Home</a>
       <a href="/items/add" class="auth-required">Add Item</a>
+      <a href="/admin/users" class="admin-only">Manage Users</a>
       <span id="auth-links">
         <a href="/login" class="logged-out">Login</a>
         <a href="/signup" class="logged-out">Sign Up</a>
         <a href="#" id="logout-link" class="logged-in">Logout</a>
       </span>
     </nav>
+    <div id="user-info" style="display: none;">
+      Welcome, <span id="user-name"></span> 
+      <span id="user-role-badge"></span>
+    </div>
   </header>
   <main>
     <%- body %>
@@ -27,29 +32,22 @@
   </footer>
 
   <script>
-    // Check authentication state
     document.addEventListener('DOMContentLoaded', function() {
       const token = localStorage.getItem('token');
       const isLoggedIn = !!token;
       
-      // Show/hide elements based on auth state
+      // Show/hide elements based on login status
       document.querySelectorAll('.logged-in').forEach(el => {
-        el.style.display = isLoggedIn ? 'inline' : 'none';
+        el.style.display = isLoggedIn ? 'inline-block' : 'none';
       });
       
       document.querySelectorAll('.logged-out').forEach(el => {
-        el.style.display = isLoggedIn ? 'none' : 'inline';
+        el.style.display = isLoggedIn ? 'none' : 'inline-block';
       });
       
+      // Handle auth-required elements
       document.querySelectorAll('.auth-required').forEach(el => {
         if (!isLoggedIn) {
-          // If it's a button or input, disable it
-          if (el.tagName === 'BUTTON' || el.tagName === 'INPUT') {
-            el.disabled = true;
-            el.classList.add('disabled');
-          }
-          
-          // If it's a link, prevent default and show login prompt
           if (el.tagName === 'A') {
             el.addEventListener('click', function(e) {
               e.preventDefault();
@@ -58,11 +56,56 @@
             });
             el.classList.add('disabled-link');
           }
-          
-          // For all auth-required elements, add visual indication
           el.classList.add('auth-hidden');
         }
       });
+      
+      // Get and display user info if logged in
+      if (isLoggedIn) {
+        fetch('/api/auth/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === 'success') {
+            const user = data.data.user;
+            
+            // Display user info
+            document.getElementById('user-info').style.display = 'inline-block';
+            document.getElementById('user-name').textContent = user.name;
+            
+            // Style the role badge
+            const roleBadge = document.getElementById('user-role-badge');
+            roleBadge.textContent = user.role.toUpperCase();
+            roleBadge.style.padding = '3px 6px';
+            roleBadge.style.borderRadius = '3px';
+            roleBadge.style.fontSize = '0.7em';
+            roleBadge.style.marginLeft = '5px';
+            roleBadge.style.fontWeight = 'bold';
+            
+            if (user.role === 'admin') {
+              roleBadge.style.backgroundColor = '#e74c3c';
+            } else {
+              roleBadge.style.backgroundColor = '#2ecc71';
+            }
+            roleBadge.style.color = 'white';
+            
+            // Show/hide admin elements
+            document.querySelectorAll('.admin-only').forEach(el => {
+              if (user.role !== 'admin') {
+                el.style.display = 'none';
+              }
+            });
+          }
+        });
+      } else {
+        // Hide admin elements when not logged in
+        document.querySelectorAll('.admin-only').forEach(el => {
+          el.style.display = 'none';
+        });
+      }
       
       // Handle logout
       const logoutLink = document.getElementById('logout-link');
@@ -72,39 +115,6 @@
           localStorage.removeItem('token');
           window.location.href = '/login';
         });
-      }
-
-      // Check server status periodically
-      let lastKnownServerTime = null;
-      async function checkServerStatus() {
-        try {
-          const response = await fetch('/api/server-status');
-          const data = await response.json();
-          
-          // On first check, just store the time
-          if (lastKnownServerTime === null) {
-            lastKnownServerTime = data.startTime;
-            return;
-          }
-          
-          // If timestamp changed, server was restarted
-          if (lastKnownServerTime !== data.startTime) {
-            console.log('Server was restarted, logging out...');
-            localStorage.removeItem('token');
-            alert('Your session has expired. Please log in again.');
-            window.location.href = '/login';
-          }
-          
-          lastKnownServerTime = data.startTime;
-        } catch (err) {
-          console.log('Server check failed, might be offline');
-        }
-      }
-      
-      // Check every 30 seconds if user is logged in
-      if (localStorage.getItem('token')) {
-        checkServerStatus(); // Initial check
-        setInterval(checkServerStatus, 30000);
       }
     });
   </script>

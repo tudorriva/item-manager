@@ -2,9 +2,16 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 
-// Auth routes
+// Public auth routes
 router.post('/signup', authController.signup);
 router.post('/login', authController.login);
-router.get('/me', authController.protect, authController.getMe);
+
+// Protected routes
+router.use(authController.protect);
+router.get('/me', authController.getMe);
+
+// Admin only routes
+router.use(authController.restrictTo('admin'));
+router.post('/create-admin', authController.createAdmin);
 
 module.exports = router;
