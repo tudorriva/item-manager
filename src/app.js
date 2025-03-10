@@ -66,6 +66,10 @@ app.get('/signup', (req, res) => res.render('signup'));
 // Add this route to serve the token test page
 app.get('/token-test', (req, res) => res.render('tokenTest'));
 
+// Add these with your other page routes
+app.get('/forgot-password', (req, res) => res.render('forgotPassword'));
+app.get('/reset-password/:token', (req, res) => res.render('resetPassword'));
+
 // Add unhandled promise rejection handler
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
