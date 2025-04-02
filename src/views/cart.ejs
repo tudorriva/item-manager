@@ -1,0 +1,229 @@
+<% layout('layouts/main') %>
+
+<div class="container my-4">
+  <h1>Your Cart</h1>
+
+  <% if (!cart.items || cart.items.length === 0) { %>
+    <div class="alert alert-info">
+      Your cart is empty. <a href="/">Continue shopping</a>
+    </div>
+  <% } else { %>
+    <ul class="cart-list">
+      <% cart.items.forEach(cartItem => { %>
+        <li class="cart-item" data-id="<%= cartItem.item._id %>">
+          <div class="cart-item-image">
+            <% if (cartItem.item.imageCover) { %>
+              <img src="/img/items/<%= cartItem.item.imageCover %>" alt="<%= cartItem.item.name %>">
+            <% } else { %>
+              <img src="/img/default-item.jpg" alt="Default Image">
+            <% } %>
+          </div>
+          <div class="cart-item-details">
+            <h3><%= cartItem.item.name %></h3>
+            <p><%= cartItem.item.description.substring(0, 100) %><%= cartItem.item.description.length > 100 ? '...' : '' %></p>
+            
+            <div class="quantity-controls">
+              <button class="quantity-btn decrease">-</button>
+              <input type="number" class="quantity-input" value="<%= cartItem.quantity %>" min="1" max="<%= cartItem.item.quantity %>">
+              <button class="quantity-btn increase">+</button>
+              <span class="stock-info">(<%= cartItem.item.quantity %> in stock)</span>
+            </div>
+          </div>
+          <div class="cart-item-actions">
+            <button class="btn btn-sm btn-danger remove-from-cart">Remove</button>
+          </div>
+        </li>
+      <% }) %>
+    </ul>
+    
+    <div class="cart-actions mt-4">
+      <a href="/" class="btn btn-secondary">Continue Shopping</a>
+      <button id="checkout-btn" class="btn btn-primary">Checkout</button>
+    </div>
+  <% } %>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const token = localStorage.getItem('token');
+  
+  if (!token) {
+    window.location.href = '/login';
+    return;
+  }
+
+  // Increase quantity button
+  document.querySelectorAll('.increase').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const input = this.parentElement.querySelector('.quantity-input');
+      const maxValue = parseInt(input.getAttribute('max'), 10);
+      let value = parseInt(input.value, 10);
+      
+      if (value < maxValue) {
+        input.value = value + 1;
+        updateCartItem(this.closest('.cart-item'));
+      }
+    });
+  });
+  
+  // Decrease quantity button
+  document.querySelectorAll('.decrease').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const input = this.parentElement.querySelector('.quantity-input');
+      let value = parseInt(input.value, 10);
+      
+      if (value > 1) {
+        input.value = value - 1;
+        updateCartItem(this.closest('.cart-item'));
+      }
+    });
+  });
+  
+  // Manual quantity change
+  document.querySelectorAll('.quantity-input').forEach(input => {
+    input.addEventListener('change', function() {
+      let value = parseInt(this.value, 10) || 1;
+      const max = parseInt(this.getAttribute('max'), 10);
+      
+      if (value < 1) value = 1;
+      if (value > max) value = max;
+      
+      this.value = value;
+      updateCartItem(this.closest('.cart-item'));
+    });
+  });
+  
+  // Remove from cart
+  document.querySelectorAll('.remove-from-cart').forEach(btn => {
+    btn.addEventListener('click', async function() {
+      const cartItem = this.closest('.cart-item');
+      const itemId = cartItem.getAttribute('data-id');
+      
+      try {
+        const response = await fetch(`/cart/remove/${itemId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          cartItem.remove();
+          
+          // If cart is now empty, refresh page to show empty state
+          if (document.querySelectorAll('.cart-item').length === 0) {
+            window.location.reload();
+          }
+        } else {
+          const data = await response.json();
+          alert('Error: ' + (data.message || 'Unknown error'));
+        }
+      } catch (err) {
+        console.error('Error:', err);
+        alert('Error: ' + err.message);
+      }
+    });
+  });
+  
+  // Update cart item
+  async function updateCartItem(cartItem) {
+    const itemId = cartItem.getAttribute('data-id');
+    const quantity = cartItem.querySelector('.quantity-input').value;
+    
+    try {
+      const response = await fetch('/cart/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ itemId, quantity })
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        alert('Error: ' + (data.message || 'Unknown error'));
+      }
+    } catch (err) {
+      console.error('Error:', err);
+      alert('Error: ' + err.message);
+    }
+  }
+  
+  // Checkout button - placeholder for future implementation
+  document.getElementById('checkout-btn')?.addEventListener('click', function() {
+    alert('Checkout functionality will be implemented soon!');
+  });
+});
+</script>
+
+<style>
+.cart-list {
+  list-style: none;
+  padding: 0;
+}
+
+.cart-item {
+  display: flex;
+  padding: 15px;
+  border-bottom: 1px solid #eee;
+  align-items: center;
+}
+
+.cart-item-image {
+  width: 100px;
+  margin-right: 20px;
+}
+
+.cart-item-image img {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.cart-item-details {
+  flex: 1;
+}
+
+.cart-item-actions {
+  margin-left: 20px;
+}
+
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.quantity-btn {
+  width: 30px;
+  height: 30px;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+
+.quantity-input {
+  width: 50px;
+  height: 30px;
+  text-align: center;
+  margin: 0 10px;
+}
+
+.stock-info {
+  margin-left: 10px;
+  color: #666;
+  font-size: 0.9em;
+}
+
+.cart-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+</style>

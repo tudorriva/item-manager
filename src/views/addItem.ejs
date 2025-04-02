@@ -1,57 +1,63 @@
 <% layout('layouts/main') %>
 <h1>Add New Item</h1>
-<form id="addItemForm">
-    <label for="name">Name:</label>
-    <input type="text" id="name" name="name" required>
-    <br>
-    <label for="description">Description:</label>
-    <textarea id="description" name="description" required></textarea>
-    <br>
-    <label for="quantity">Quantity:</label>
-    <input type="number" id="quantity" name="quantity" required min="0">
-    <br>
+<form id="addItemForm" enctype="multipart/form-data">
+    <div>
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required>
+    </div>
+    
+    <div>
+        <label for="description">Description:</label>
+        <textarea id="description" name="description" required></textarea>
+    </div>
+    
+    <div>
+        <label for="quantity">Quantity:</label>
+        <input type="number" id="quantity" name="quantity" required min="0">
+    </div>
+    
+    <div>
+        <label for="imageCover">Cover Image:</label>
+        <input type="file" id="imageCover" name="imageCover" accept="image/*">
+    </div>
+    
     <button type="submit">Add Item</button>
 </form>
 
 <div id="result" style="margin-top: 20px; padding: 10px; background-color: #f5f5f5;"></div>
 
 <script>
-console.log('localStorage token check:', localStorage.getItem('token'));
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('addItemForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-        console.log('Form submitted');
         
-        // Get token from localStorage
         const token = localStorage.getItem('token');
-        console.log('Token from localStorage:', token ? 'Found' : 'Not found');
-        
         if (!token) {
             alert('You must be logged in to add items');
             window.location.href = '/login';
             return;
         }
         
-        const formData = {
-            name: document.getElementById('name').value,
-            description: document.getElementById('description').value,
-            quantity: parseInt(document.getElementById('quantity').value)
-        };
+        const formData = new FormData();
+        formData.append('name', document.getElementById('name').value);
+        formData.append('description', document.getElementById('description').value);
+        formData.append('quantity', document.getElementById('quantity').value);
+        
+        const imageFile = document.getElementById('imageCover').files[0];
+        if (imageFile) {
+            formData.append('imageCover', imageFile);
+        }
         
         try {
-            console.log('Sending request with auth token...');
             const response = await fetch('/items/add', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(formData)
+                body: formData
             });
             
             const data = await response.json();
-            console.log('Response:', data);
-            
             document.getElementById('result').textContent = JSON.stringify(data, null, 2);
             
             if (response.ok) {

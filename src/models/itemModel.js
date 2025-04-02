@@ -21,7 +21,12 @@ const itemSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
-  }
+  },
+  imageCover: {
+    type: String, // Stores the path/URL to the image
+    required: [true, 'An item must have a cover image']
+  },
+  images: [String]
 });
 
 const Item = mongoose.model('Item', itemSchema);

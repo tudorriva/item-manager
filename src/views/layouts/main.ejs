@@ -5,24 +5,224 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%- typeof title !== 'undefined' ? title : "CRUD App" %></title>
   <link rel="stylesheet" href="/styles.css">
+  <style>
+    .card-img-container {
+      height: 200px;  /* Fixed height container */
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .card-img-top {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;  /* This is key - maintains aspect ratio while covering container */
+      object-position: center;  /* Centers the image */
+    }
+    
+    .card {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .card-body {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .item-description {
+      flex-grow: 1;
+    }
+
+    /* Add or update these CSS styles */
+
+    /* Item list styling */
+    .item-list {
+      list-style: none;
+      padding: 0;
+    }
+    
+    .item-list-row {
+      display: flex;
+      border: 1px solid #e1e1e1;
+      border-radius: 4px;
+      margin-bottom: 15px;
+      padding: 15px;
+      background-color: white;
+      max-width: 100%;
+      overflow: hidden;
+    }
+    
+    .item-image {
+      width: 120px;
+      height: 120px;
+      margin-right: 15px;
+      flex-shrink: 0;
+    }
+    
+    .item-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+    
+    .item-content {
+      display: flex;
+      flex: 1;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .item-details {
+      flex: 1;
+      min-width: 0; /* Important for text truncation */
+      overflow: hidden; /* Important for containing floated children */
+      margin-right: 15px;
+    }
+    
+    .item-details h3 {
+      margin-top: 0;
+      margin-bottom: 10px;
+      font-size: 1.25rem;
+    }
+    
+    .item-description {
+      color: #666;
+      margin-bottom: 8px;
+      line-height: 1.4;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      max-height: 4.2em; /* 3 lines * 1.4 line height */
+    }
+    
+    .item-quantity {
+      font-size: 0.9em;
+      margin-bottom: 0;
+    }
+    
+    /* Action buttons */
+    .item-actions {
+      flex-shrink: 0;
+      width: 80px; /* Fixed width for actions */
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    
+    .item-actions .btn {
+      width: 100%;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .item-list-row {
+        flex-direction: column;
+      }
+      
+      .item-image {
+        width: 100%;
+        margin-right: 0;
+        margin-bottom: 15px;
+      }
+      
+      .item-content {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      
+      .item-actions {
+        margin-left: 0;
+        margin-top: 15px;
+        flex-direction: row;
+        width: 100%;
+      }
+      
+      .item-actions .btn {
+        margin-right: 10px;
+        margin-bottom: 0;
+      }
+    }
+
+    /* Add this to your existing styles */
+    .item-owner {
+      margin-bottom: 5px;
+      font-size: 0.9em;
+      color: #6c757d;
+    }
+    
+    .item-date {
+      margin-bottom: 0;
+      font-size: 0.8em;
+      color: #6c757d;
+    }
+    
+    /* Admin view highlight */
+    .admin-view .item-list-row {
+      border-left: 3px solid #17a2b8;
+    }
+
+    /* Add these styles to your existing CSS */
+    .text-truncate-3 {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-height: 4.5em; /* Approximately 3 lines */
+    }
+  </style>
+
+
 </head>
 <body>
   <header>
-    <h1>CRUD App</h1>
-    <nav>
-      <a href="/">Home</a>
-      <a href="/items/add" class="auth-required">Add Item</a>
-      <a href="/admin/users" class="admin-only">Manage Users</a>
-      <span id="auth-links">
-        <a href="/login" class="logged-out">Login</a>
-        <a href="/signup" class="logged-out">Sign Up</a>
-        <a href="#" id="logout-link" class="logged-in">Logout</a>
-      </span>
+    <h1>Item Manager</h1>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+      <div class="container">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="/">Home</a>
+          </li>
+          <li class="nav-item logged-in" style="display:none">
+            <a class="nav-link" href="/items/add">Add Item</a>
+          </li>
+          <li class="nav-item logged-in" style="display:none">
+            <a class="nav-link" href="/items/my-items">My Items</a>
+          </li>
+          <li class="nav-item logged-in" style="display:none">
+            <a class="nav-link" href="/cart">Cart
+              <span id="cart-count" class="badge bg-danger" style="display: none;">0</span>
+            </a>
+          </li>
+          <!-- Add this new stats link with both server-side and client-side checks -->
+          <li class="nav-item admin-only" style="display:none">
+            <a class="nav-link" href="/stats">Statistics</a>
+          </li>
+        </ul>
+        <div class="d-flex">
+          <div id="user-info" style="display:none; margin-right: 15px;">
+            Welcome, <span id="user-name"></span>
+            <span id="user-role-badge"></span>
+          </div>
+          <ul class="navbar-nav">
+            <li class="nav-item logged-out">
+              <a class="nav-link" href="/login">Login</a>
+            </li>
+            <li class="nav-item logged-out">
+              <a class="nav-link" href="/signup">Sign Up</a>
+            </li>
+            <li class="nav-item logged-in" style="display:none">
+              <a class="nav-link" href="#" id="logout-link">Logout</a>
+            </li>
+          </ul>
+        </div>
+      </div>
     </nav>
-    <div id="user-info" style="display: none;">
-      Welcome, <span id="user-name"></span> 
-      <span id="user-role-badge"></span>
-    </div>
   </header>
   <main>
     <%- body %>
@@ -36,6 +236,24 @@
       const token = localStorage.getItem('token');
       const isLoggedIn = !!token;
       
+      // Add Authorization header to all fetch requests
+      if (token) {
+        const originalFetch = window.fetch;
+        window.fetch = function(url, options = {}) {
+          // Create new headers if they don't exist
+          if (!options.headers) {
+            options.headers = {};
+          }
+          
+          // Add auth header if not already present
+          if (!options.headers.Authorization && !options.headers.authorization) {
+            options.headers.Authorization = `Bearer ${token}`;
+          }
+          
+          return originalFetch(url, options);
+        };
+      }
+      
       // Show/hide elements based on login status
       document.querySelectorAll('.logged-in').forEach(el => {
         el.style.display = isLoggedIn ? 'inline-block' : 'none';
@@ -45,66 +263,27 @@
         el.style.display = isLoggedIn ? 'none' : 'inline-block';
       });
       
-      // Handle auth-required elements
-      document.querySelectorAll('.auth-required').forEach(el => {
-        if (!isLoggedIn) {
-          if (el.tagName === 'A') {
-            el.addEventListener('click', function(e) {
-              e.preventDefault();
-              alert('Please log in to access this feature');
-              window.location.href = '/login';
-            });
-            el.classList.add('disabled-link');
-          }
-          el.classList.add('auth-hidden');
-        }
-      });
-      
       // Get and display user info if logged in
       if (isLoggedIn) {
-        fetch('/api/auth/me', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.status === 'success') {
-            const user = data.data.user;
-            
-            // Display user info
-            document.getElementById('user-info').style.display = 'inline-block';
-            document.getElementById('user-name').textContent = user.name;
-            
-            // Style the role badge
-            const roleBadge = document.getElementById('user-role-badge');
-            roleBadge.textContent = user.role.toUpperCase();
-            roleBadge.style.padding = '3px 6px';
-            roleBadge.style.borderRadius = '3px';
-            roleBadge.style.fontSize = '0.7em';
-            roleBadge.style.marginLeft = '5px';
-            roleBadge.style.fontWeight = 'bold';
-            
-            if (user.role === 'admin') {
-              roleBadge.style.backgroundColor = '#e74c3c';
-            } else {
-              roleBadge.style.backgroundColor = '#2ecc71';
-            }
-            roleBadge.style.color = 'white';
-            
-            // Show/hide admin elements
-            document.querySelectorAll('.admin-only').forEach(el => {
-              if (user.role !== 'admin') {
-                el.style.display = 'none';
+        fetch('/api/auth/me')
+          .then(response => response.json())
+          .then(data => {
+            if (data.status === 'success') {
+              const user = data.data.user;
+              
+              // Display user info
+              document.getElementById('user-info').style.display = 'inline-block';
+              document.getElementById('user-name').textContent = user.name;
+              
+              // Update other UI elements based on user data
+              
+              // Call updateCartCount if it exists
+              if (typeof updateCartCount === 'function') {
+                updateCartCount();
               }
-            });
-          }
-        });
-      } else {
-        // Hide admin elements when not logged in
-        document.querySelectorAll('.admin-only').forEach(el => {
-          el.style.display = 'none';
-        });
+            }
+          })
+          .catch(console.error);
       }
       
       // Handle logout
@@ -175,8 +354,8 @@
         });
       });
 
-      // For button-based deletion
-      document.querySelectorAll('.delete-btn').forEach(btn => {
+      // Handle both delete-btn and delete-item classes
+      document.querySelectorAll('.delete-btn, .delete-item').forEach(btn => {
         // Remove any existing click handlers first to avoid duplicates
         btn.removeEventListener('click', handleDeleteButtonClick);
         btn.addEventListener('click', handleDeleteButtonClick);
@@ -193,9 +372,17 @@
             return;
           }
           
-          const itemId = this.getAttribute('data-id');
+          // Get item ID from data-id or data-item-id attribute
+          const itemId = this.getAttribute('data-id') || this.getAttribute('data-item-id');
           
-          fetch(`/api/items/${itemId}/delete`, {
+          if (!itemId) {
+            console.error('No item ID found on delete button');
+            alert('Error: Could not identify item to delete');
+            return;
+          }
+          
+          // Use the correct endpoint URL for your routes
+          fetch(`/items/delete/${itemId}`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -204,8 +391,13 @@
           })
           .then(response => {
             if (response.ok) {
-              alert('Item deleted successfully');
-              window.location.reload();
+              // Remove the item from the page without reloading
+              const listItem = this.closest('.item-list-row');
+              if (listItem) {
+                listItem.remove();
+              } else {
+                window.location.reload();
+              }
             } else {
               return response.json().then(data => {
                 throw new Error(data.message || 'Failed to delete item');
@@ -218,7 +410,55 @@
           });
         }
       }
+
+      // Call this when the page loads
+      if (localStorage.getItem('token')) {
+        updateCartCount();
+      }
     });
+
+    // Add this to your existing scripts
+    function updateCartCount() {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      
+      fetch('/cart/data', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          const cartCountElement = document.getElementById('cart-count');
+          if (cartCountElement) {
+            const cartCount = data.data.cart.items ? data.data.cart.items.length : 0;
+            cartCountElement.textContent = cartCount;
+            
+            if (cartCount > 0) {
+              cartCountElement.style.display = 'inline';
+            } else {
+              cartCountElement.style.display = 'none';
+            }
+          }
+        }
+      })
+      .catch(err => console.error('Error fetching cart count:', err));
+    }
+
+    // Make it globally available
+    window.updateCartCount = updateCartCount;
+
+    // Call this when the page loads if user is logged in
+    if (isLoggedIn) {
+      setTimeout(updateCartCount, 1000); // Delay slightly to ensure other code runs first
+    }
+
+    // Call this when the page loads
+    window.updateCartCount = updateCartCount;
   </script>
+
+  <!-- Use a clean version of your main.js script -->
+  <script src="/js/main.js"></script>
 </body>
 </html>

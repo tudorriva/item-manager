@@ -166,6 +166,32 @@ a:hover {
   border-radius: 3px;
 }
 
+.add-to-cart-btn {
+  margin-top: 10px;
+  width: 100%;
+}
+
+.card .add-to-cart-btn {
+  margin-top: auto;
+}
+
+.item-list-row .add-to-cart-btn {
+  margin-top: 5px;
+}
+
+.admin-badge {
+  background-color: #dc3545;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  margin-left: 5px;
+}
+
+.admin-only {
+  display: none; /* Hidden by default, shown via JS for admins */
+}
+
 @media (max-width: 768px) {
   header {
     padding: 0.8rem;

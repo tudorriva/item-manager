@@ -14,6 +14,13 @@ const signToken = id => {
 const createSendToken = (user, statusCode, res) => {
   const token = signToken(user._id);
   
+  // Set cookie
+  const cookieOptions = {
+    expires: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days
+    httpOnly: true
+  };
+  res.cookie('jwt', token, cookieOptions);
+
   // Remove password from output
   user.password = undefined;
 
@@ -56,39 +63,67 @@ exports.signup = async (req, res) => {
 };
 
 // Login
-exports.login = async (req, res) => {
+exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
+    // Check if email and password exist
     if (!email || !password) {
       return res.status(400).json({
         status: 'fail',
-        message: 'Please provide email and password'
+        message: 'Please provide email and password!'
       });
     }
 
+    // Check if user exists && password is correct
     const user = await User.findOne({ email }).select('+password');
     
-    if (!user || !(await user.correctPassword(password))) {
+    if (!user || !(await user.correctPassword(password, user.password))) {
       return res.status(401).json({
         status: 'fail',
         message: 'Incorrect email or password'
       });
     }
 
-    // Send token
-    createSendToken(user, 200, res);
-  } catch (err) {
-    res.status(400).json({
-      status: 'fail',
-      message: err.message
+    // If everything ok, create token and send to client
+    const token = signToken(user._id);
+    
+    // Set cookie options with fallback for missing env variable
+    // Fix for "option expires is invalid" error
+    const cookieExpiresIn = process.env.JWT_COOKIE_EXPIRES_IN || '90'; // Default to 90 days
+    const expiresInDays = parseInt(cookieExpiresIn, 10) || 90; // Ensure it's a valid number
+    
+    const cookieOptions = {
+      expires: new Date(
+        Date.now() + expiresInDays * 24 * 60 * 60 * 1000
+      ),
+      httpOnly: false, 
+      secure: req.secure || req.headers['x-forwarded-proto'] === 'https'
+    };
+    
+    // Send token as cookie
+    res.cookie('jwt', token, cookieOptions);
+    
+    // Remove password from output
+    user.password = undefined;
+    
+    res.status(200).json({
+      status: 'success',
+      token,
+      data: {
+        user
+      }
     });
+  } catch (err) {
+    next(err);
   }
 };
 
 // Protect routes
 exports.protect = async (req, res, next) => {
   try {
+    console.log('Auth headers:', req.headers.authorization); // Add this debug line
+    
     // 1) Getting token and check if it exists
     let token;
     if (
@@ -96,6 +131,8 @@ exports.protect = async (req, res, next) => {
       req.headers.authorization.startsWith('Bearer')
     ) {
       token = req.headers.authorization.split(' ')[1];
+    } else if (req.cookies && req.cookies.jwt) {
+      token = req.cookies.jwt;
     }
 
     if (!token) {
@@ -120,12 +157,8 @@ exports.protect = async (req, res, next) => {
 
     // 4) Grant access to protected route
     req.user = currentUser;
-    console.log('Auth successful, proceeding to next middleware');
-    console.log('User attached to request:', req.user._id);
-    
-    // Add debugging to see if user info is lost after this middleware
+    res.locals.user = currentUser; // Make user accessible in templates
     next();
-    console.log('After next() - req.user still exists:', !!req.user);
   } catch (err) {
     return res.status(401).json({
       status: 'fail',
@@ -284,4 +317,71 @@ exports.resetPassword = async (req, res) => {
       message: err.message
     });
   }
+};
+
+// Check if user is logged in - doesn't block access
+exports.isLoggedIn = async (req, res, next) => {
+  try {
+    // Skip token check for login and signup pages
+    if (req.originalUrl === '/login' || req.originalUrl === '/signup') {
+      return next();
+    }
+
+    // Check for token
+    let token;
+    if (req.cookies && req.cookies.jwt) {
+      token = req.cookies.jwt;
+    } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      token = req.headers.authorization.split(' ')[1];
+    }
+
+    // No token = not logged in
+    if (!token) {
+      return next();
+    }
+
+    // Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Find user
+    const currentUser = await User.findById(decoded.id);
+    if (!currentUser) {
+      return next();
+    }
+
+    // Store user info for templates
+    req.user = currentUser;
+    res.locals.user = currentUser;
+    
+    return next();
+  } catch (err) {
+    // Just proceed without authentication
+    return next();
+  }
+};
+
+// Get current user from protect middleware
+exports.getCurrentUser = async (req, res) => {
+  // The user is already available from the protect middleware
+  res.status(200).json({
+    status: 'success',
+    data: {
+      user: {
+        id: req.user.id,
+        name: req.user.name,
+        email: req.user.email,
+        role: req.user.role
+      }
+    }
+  });
+};
+
+// Logout user
+exports.logout = (req, res) => {
+  res.cookie('jwt', 'loggedout', {
+    expires: new Date(Date.now() + 10 * 1000),
+    httpOnly: true
+  });
+  
+  res.status(200).json({ status: 'success' });
 };
