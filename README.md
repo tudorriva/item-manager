@@ -15,23 +15,14 @@ Item Manager is a full-stack inventory and user management web application built
 
 ---
 
-## 📁 Project Structure
 
-src/ │ ├── controllers/ # Logic for routes (auth, item, user, cart, stats) ├── models/ # Mongoose schemas for User, Item, Cart ├── routes/ # API endpoints and view routes ├── views/ # EJS templates for pages ├── public/ # Static assets (CSS, images) └── app.js # Main server entry point
-
-🛠️ Built With
-Node.js
-
-Express.js
-
-MongoDB
-
-Mongoose
-
-EJS
-
-ejs-mate
-
-JWT
-
-Cookie-Parser
+## 🛠️ Built With
+- **Node.js**
+- **Express.js**
+- **MongoDB**
+- **Mongoose**
+- **EJS**
+- **ejs-mate**
+- **JWT**
+- **Cookie-Parser**
+- **and others..**
