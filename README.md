@@ -1,69 +1,37 @@
-🗂️ Item Manager
-Item Manager is a full-stack inventory and user management web application built with Node.js, Express, MongoDB, and EJS. It supports user authentication, admin features, shopping cart functionality, and item tracking via a clean, server-rendered UI.
+# 🗂️ Item Manager
 
-✨ Features
-🔐 User authentication (signup, login, JWT tokens)
+Item Manager is a full-stack inventory and user management web application built with **Node.js**, **Express**, **MongoDB**, and **EJS**. It provides a simple, server-rendered interface where users can register, log in, manage items, and use a basic shopping cart system. Admin and user roles are supported, and backend APIs are cleanly structured for easy extension.
 
-🧾 Item CRUD operations (create, read, update, delete)
+---
 
-🛒 Cart functionality
+## ✨ Features
 
-📊 Basic admin and user dashboards
+- 🔐 **User Authentication** – Signup, login, and JWT-based session handling
+- 🧾 **Item Management** – Create, update, delete, and list items
+- 🛒 **Cart System** – Add items to a user cart and view contents
+- 📊 **Admin/User Dashboards** – Different UI flows for admin and regular users
+- 💡 **EJS Templating** – Dynamic, server-side rendered pages using EJS and `ejs-mate`
+- 📈 **Server Health Endpoint** – `/api/server-status` returns basic uptime info
 
-📈 Server uptime monitoring route (/api/server-status)
+---
 
-🎨 Templated views using EJS and ejs-mate layout engine
+## 📁 Project Structure
 
-📁 Project Structure
-graphql
-Copy
-Edit
-src/
-│
-├── routes/           # API and page routes
-├── controllers/      # Route handlers for auth, items, users, cart, stats
-├── models/           # Mongoose models
-├── views/            # EJS templates
-├── public/           # Static assets
-└── app.js            # App entry point
-🚀 Getting Started
-Clone the repo
+src/ │ ├── controllers/ # Logic for routes (auth, item, user, cart, stats) ├── models/ # Mongoose schemas for User, Item, Cart ├── routes/ # API endpoints and view routes ├── views/ # EJS templates for pages ├── public/ # Static assets (CSS, images) └── app.js # Main server entry point
 
-bash
-Copy
-Edit
-git clone https://github.com/tudorriva/item-manager.git
-cd item-manager
-Install dependencies
-
-bash
-Copy
-Edit
-npm install
-Set up your .env file
-
-ini
-Copy
-Edit
-MONGODB_URI=your_mongodb_uri
-JWT_SECRET=your_jwt_secret
-Run the server
-
-bash
-Copy
-Edit
-npm start
-Visit http://localhost:3000 in your browser.
-
-🛠️ Tech Stack
+🛠️ Built With
 Node.js
 
-Express
+Express.js
 
-MongoDB & Mongoose
+MongoDB
 
-EJS & ejs-mate
+Mongoose
+
+EJS
+
+ejs-mate
 
 JWT
 
-Cookie Parser
+Cookie-Parser
